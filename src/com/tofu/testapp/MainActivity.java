@@ -17,18 +17,37 @@ import android.content.Intent;
 import android.graphics.Bitmap;
 import android.view.Menu;
 import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
 
 public class MainActivity extends Activity {
 
 	static final int REQUEST_IMAGE_CAPTURE = 1;
-
-    @Override
+	private Bitmap bitmap;
+	private ImageView imageView;
+    
+	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-    }
+        //imageView = (ImageView) findViewById(R.id);
+        this.imageView = (ImageView)this.findViewById(R.id.imageView1);
+        Button photoButton = (Button) this.findViewById(R.id.button1);
+        photoButton.setOnClickListener(new View.OnClickListener() {
 
-    
+            @Override
+            public void onClick(View v) {
+                Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE); 
+                startActivityForResult(cameraIntent, REQUEST_IMAGE_CAPTURE); 
+            }
+        });
+    }
+	protected void onActivityResult(int requestCode, int resultCode, Intent data) {  
+	        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {  
+	            Bitmap photo = (Bitmap) data.getExtras().get("data"); 
+	            imageView.setImageBitmap(photo);
+	        }  
+	} 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
@@ -39,7 +58,7 @@ public class MainActivity extends Activity {
     //
     //capture photo
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1) 
-    public void captureImage(View view){
+    private void dispatchTakePictureIntent(){
     	Intent takePictureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE_SECURE);
     	if (takePictureIntent.resolveActivity(getPackageManager()) != null) {
     	        // Create the File where the photo should go

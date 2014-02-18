@@ -14,4 +14,5 @@ motochallenge
   - git push //push to github (remote)
 
 4. update in Eclipse
-  - need to install git 
+  - need to install git plugins: http://eclipse.org/egit/download/
+  

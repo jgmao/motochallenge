@@ -13,6 +13,7 @@
         android:layout_height="wrap_content"
         android:text="@string/button_capture"
         android:id = "@+id/button1"
+        android:onClick="onClick"
         />
     <ImageView 
         android:id="@+id/imageView1" 

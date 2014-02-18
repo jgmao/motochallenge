@@ -55,7 +55,7 @@ public class MainActivity extends Activity {
         //dispatchTakePictureIntent();
         return true;
     }
-    //
+    //	
     //capture photo
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1) 
     private void dispatchTakePictureIntent(){

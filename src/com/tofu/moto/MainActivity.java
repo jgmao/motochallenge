@@ -6,6 +6,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import com.googlecode.tesseract.android.TessBaseAPI;
+
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -60,9 +62,27 @@ public class MainActivity extends Activity {
 	        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {  
 	            Bitmap photo = (Bitmap) data.getExtras().get("data"); 
 	            imageView.setImageBitmap(photo);
+	            String text;
+	            try {
+					text = tess(photo);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					text = "exception";
+					e.printStackTrace();
+				}
+	            System.out.println(text);
 	        }  
 	} 
-	
+	protected String tess(Bitmap bitmap) throws IOException
+	{
+		TessBaseAPI baseApi = new TessBaseAPI();
+		baseApi.init("/mnt/sdcard/tesseract/tessdata/eng.traineddata", "eng");
+		baseApi.setImage(bitmap);
+		baseApi.setPageSegMode(TessBaseAPI.PageSegMode.PSM_AUTO);
+		String recognizedText = baseApi.getUTF8Text();
+		baseApi.end();
+		return recognizedText;
+	}
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.

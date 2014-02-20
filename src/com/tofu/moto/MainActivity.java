@@ -117,8 +117,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		 public void onPictureTaken(byte[] arg0, Camera arg1) {
 	
 		  bitmap = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
-		  //text = tess(bitmap);
-		  text = "test";
+		  try {
+			text = tess(bitmap);
+			System.out.println(text);
+		} catch (IOException e) {
+
+			e.printStackTrace();
+		}
+		  
 		 }
 	};
 		  

@@ -120,6 +120,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		  try {
 			text = tess(bitmap);
 			System.out.println(text);
+			///test test test
 		} catch (IOException e) {
 
 			e.printStackTrace();

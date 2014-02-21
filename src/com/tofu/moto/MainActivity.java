@@ -1,7 +1,12 @@
 package com.tofu.moto;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -17,6 +22,7 @@ import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.PixelFormat;
@@ -166,10 +172,31 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 //	        }  
 //	} 
 	
+	
 	protected String tess(Bitmap bitmap) throws IOException
 	{
+		String DATA_PATH = getApplicationContext().getFilesDir().toString()+//Environment.getDataDirectory().toString() +
+	            "/motochallenge/";
+		File dir = new File(DATA_PATH + "tessdata");
+	    dir.mkdirs();
+	    if (!(new File(DATA_PATH + "tessdata/eng.traineddata")).exists()) {
+	    	try {
+	    		AssetManager assetManager = getAssets();
+	            InputStream in = assetManager.open("tessdata/eng.traineddata");
+	            OutputStream out = new FileOutputStream(DATA_PATH
+	                    + "tessdata/eng.traineddata");
+	            byte[] buf = new byte[1024];
+	            int len;
+	            while ((len = in.read(buf)) > 0) {
+	                out.write(buf, 0, len);
+	            }
+	            in.close();
+	            out.close();
+	    	}catch (IOException e) {}
+	    }
 		TessBaseAPI baseApi = new TessBaseAPI();
-		baseApi.init("file://android_assets/eng.traineddata", "eng");
+		
+		baseApi.init(DATA_PATH,"eng");
 		baseApi.setImage(bitmap);
 		baseApi.setPageSegMode(TessBaseAPI.PageSegMode.PSM_AUTO);
 		String recognizedText = baseApi.getUTF8Text();

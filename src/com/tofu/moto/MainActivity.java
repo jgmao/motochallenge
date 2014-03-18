@@ -26,12 +26,15 @@ import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.SurfaceHolder;
@@ -41,9 +44,18 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import org.opencv.android.*;
+import android.graphics.Bitmap;
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.core.*;
+
+
 public class MainActivity extends Activity implements SurfaceHolder.Callback{
 
 	Camera camera;
@@ -51,7 +63,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	SurfaceHolder surfaceHolder;
 	boolean previewing = false;;
 	LayoutInflater controlInflater = null;
-
+    private Thread thread;
 	Button buttonTakePicture;
 	
 	static final int REQUEST_IMAGE_CAPTURE = 1;
@@ -61,8 +73,39 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
     // add process bar for converting process
     ProgressDialog progress;
 	Handler updateBarHandler;
-	
+	public native void FindFeatures(long matAddrGr, long matAddrRgba);
+	private static final String    TAG = "Moto::MainActivity";
 
+	private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
+        @Override
+        public void onManagerConnected(int status) {
+            switch (status) {
+                case LoaderCallbackInterface.SUCCESS:
+                {
+                    Log.i(TAG, "OpenCV loaded successfully");
+
+                    // Load native library after(!) OpenCV initialization
+                    System.loadLibrary("binarize");
+
+                    //mOpenCvCameraView.enableView();
+                } break;
+                default:
+                {
+                    super.onManagerConnected(status);
+                } break;
+            }
+        }
+    };
+    
+    @Override
+    public void onResume()
+    {
+        super.onResume();
+        OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_8, this, mLoaderCallback);
+    }
+
+    
+    
 	@SuppressWarnings("deprecation")
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,12 +119,14 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	    surfaceHolder.addCallback(this);
 	    //if(Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
 	    surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
-        //imageView = (ImageView) findViewById(R.id);
+       // imageView = (ImageView) findViewById(R.id.imageView1);
 	    controlInflater = LayoutInflater.from(getBaseContext());
 	    View viewControl = controlInflater.inflate(R.layout.control, null);
 	    LayoutParams layoutParamsControl = new LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.FILL_PARENT);
 	    this.addContentView(viewControl, layoutParamsControl);
 	    
+	    //thread = new Thread(this);
+	    //thread.start();
 	    buttonTakePicture = (Button)findViewById(R.id.takepicture);
 	    buttonTakePicture.setOnClickListener(new Button.OnClickListener(){
 	    @Override
@@ -98,8 +143,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		  camera.autoFocus(myAutoFocusCallback);
 		}});
 		
+		
 		// progress bar
 		updateBarHandler = new Handler();
+		
+		
 	}
 
 	AutoFocusCallback myAutoFocusCallback = new AutoFocusCallback(){
@@ -128,14 +176,36 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 
 		 @Override
 		 public void onPictureTaken(byte[] arg0, Camera arg1) {
-	
-		  bitmap = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
-		  Mat myMat = new Mat(bitmap.getHeight(),bitmap.getWidth(),CvType.CV_8U,new Scalar(4));
-		  Utils.bitmapToMat(bitmap, myMat);
+	       bitmap = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
+	       int dstWidth = 800;
+		   int dstHeight = (int)( 800.0/(double)bitmap.getWidth()*(double)bitmap.getHeight());
 		  
+	       Mat myMat = new Mat(bitmap.getHeight(),bitmap.getWidth(),CvType.CV_8U,new Scalar(4));
+		   Utils.bitmapToMat(bitmap, myMat);
+		   Mat inMat = new Mat(dstHeight,dstWidth,CvType.CV_8U, new Scalar(4));
+		   Imgproc.resize(myMat, inMat, inMat.size(),0,0,Imgproc.INTER_CUBIC);
+		      
+		   Mat gryMat1 = new Mat(dstHeight,dstWidth,CvType.CV_8U);
+		   Mat gryMat2 = new Mat(dstHeight,dstWidth,CvType.CV_8U);
+		   Imgproc.cvtColor(inMat, gryMat1, Imgproc.COLOR_RGBA2GRAY);
+		  
+		   FindFeatures(gryMat1.getNativeObjAddr(), gryMat2.getNativeObjAddr());
+		   bitmap.recycle();
+		   myMat.release();
+		   inMat.release();
+		   gryMat1.release();
+		   bitmap = Bitmap.createBitmap(dstWidth,dstHeight,Config.ARGB_8888);
+		   Utils.matToBitmap(gryMat2, bitmap);
+		 
+		  //Bitmap mutableBitmap = Bitmap.createScaledBitmap(bitmap, dstWidth, dstHeight, false).copy(Bitmap.Config.ARGB_8888, true);
+		  //Canvas canvas = new Canvas(mutableBitmap);
+		  //surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
+		  //surfaceView.draw(canvas);
 		  try {
+			showprocessbar(surfaceView);
 			text = tess(bitmap);
-			System.out.println(text);
+			Log.i(TAG,text);
+			//System.out.println(text);
 			///test test test
 		} catch (IOException e) {
 
@@ -164,7 +234,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 						Thread.sleep(2000);
 						updateBarHandler.post(new Runnable(){
 							public void run(){
-								progress.incrementProgressBy(5);
+								progress.incrementProgressBy(20);
 							}
 						});
 						if(progress.getProgress() == progress.getMax())
@@ -262,7 +332,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	    camera.stopPreview();
 	    previewing = false;
 	  }
-
+     
+      
 	  if (camera != null){
 	    try {
 	      camera.setPreviewDisplay(surfaceHolder);

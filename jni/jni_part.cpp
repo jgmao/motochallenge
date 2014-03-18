@@ -69,7 +69,7 @@ double calcLocalStats (Mat &im, Mat &map_m, Mat &map_s, int winx, int winy) {
 	return max_s;
 }
 void Wolf (Mat im, Mat output, int winx, int winy, double k, double dR) {
-	  __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "0.1------------------");
+	 // __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "0.1------------------");
 
 	double m, s, max_s;
 	double th=0;
@@ -85,16 +85,16 @@ void Wolf (Mat im, Mat output, int winx, int winy, double k, double dR) {
 	// Create local statistics and store them in a double matrices
 	Mat map_m = Mat::zeros (im.rows, im.cols, CV_32F);
 	Mat map_s = Mat::zeros (im.rows, im.cols, CV_32F);
-	  __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "1------------------");
+	//  __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "1------------------");
 	max_s = calcLocalStats (im, map_m, map_s, winx, winy);
-	  __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "2------------------");
+	//  __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "2------------------");
 	minMaxLoc(im, &min_I, &max_I);
 
 	Mat thsurf (im.rows, im.cols, CV_32F);
 
 	// Create the threshold surface, including border processing
 	// ----------------------------------------------------
-
+	//__android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "3------------------");
 	for	(int j = y_firstth ; j<=y_lastth; j++) {
 
 		// NORMAL, NON-BORDER AREA IN THE MIDDLE OF THE WINDOW:
@@ -135,7 +135,7 @@ void Wolf (Mat im, Mat output, int winx, int winy, double k, double dR) {
 				for (int u=y_lastth+1; u<im.rows; ++u)
 					thsurf.fset(i+wxh,u,th);
 		}
-		  __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "3------------------");
+
 		// RIGHT BORDER
 		for (int i=x_lastth; i<im.cols; ++i)
         	thsurf.fset(i,j,th);
@@ -152,7 +152,7 @@ void Wolf (Mat im, Mat output, int winx, int winy, double k, double dR) {
 			for (int i=x_lastth; i<im.cols; ++i)
 				thsurf.fset(i,u,th);
 	}
-	  __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "4------------------");
+	 //__android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "4------------------");
 
 	for	(int y=0; y<im.rows; ++y)
 	for	(int x=0; x<im.cols; ++x)
@@ -166,18 +166,20 @@ void Wolf (Mat im, Mat output, int winx, int winy, double k, double dR) {
     	    output.uset(x,y,0);
     	}
     }
-	 __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "5------------------");
+	// __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "5------------------");
 
 }
 
 extern "C" {
-JNIEXPORT void JNICALL Java_org_opencv_samples_tutorial2_Tutorial2Activity_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrRgba);
 
-JNIEXPORT void JNICALL Java_org_opencv_samples_tutorial2_Tutorial2Activity_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrRgba)
+JNIEXPORT void JNICALL Java_com_tofu_moto_MainActivity_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrRgba);
+
+JNIEXPORT void JNICALL Java_com_tofu_moto_MainActivity_FindFeatures(JNIEnv*, jobject, jlong addrGray, jlong addrRgba)
 {
 	int winx=40, winy=40;
 	float optK = 0.5;
-    Mat& mGr  = *(Mat*)addrGray;
+    //make sure both are greyscale
+	Mat& mGr  = *(Mat*)addrGray;
     Mat& mRgb = *(Mat*)addrRgba;
     //vector<KeyPoint> v;
 
@@ -185,12 +187,12 @@ JNIEXPORT void JNICALL Java_org_opencv_samples_tutorial2_Tutorial2Activity_FindF
     winx = (int) mGr.cols-1 < winy ? mGr.cols-1 : winy;
     if (winx > 100)
         winx = winy = 40;
-    Mat output=Mat::zeros(mGr.size(),mGr.type());
-    __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "0------------------");
-    Wolf(mGr, output, winx, winy, optK, 128);
-    __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "6------------------");
-
-    cv::cvtColor(output,mRgb,cv::COLOR_GRAY2BGRA,4);
+    //Mat output=Mat::zeros(mGr.size(),mGr.type());
+   // __android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "0------------------");
+    Wolf(mGr, mRgb, winx, winy, optK, 128);
+    //__android_log_write(ANDROID_LOG_INFO, "MOTOTAG", "6------------------");
+   //__android_log_print(ANDROID_LOG_INFO,"MOTOTAG","type1: %d, type2:%d\n",mGr.type(),mRgb.type());
+    //cv::cvtColor(output,mRgb,cv::COLOR_GRAY2BGRA,4);
 
 }
 }

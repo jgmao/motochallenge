@@ -6,4 +6,8 @@
     <string name="hello_world">Hello world!</string>
     <string name="button_capture">Snap</string>
     <string name="desc">Review</string>
+    <string name="title_activity_progressdialog">Progressdialog</string>
+    <string name="process_button1">ProcessDialogue Bar</string>
+
+
 </resources>

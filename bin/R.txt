@@ -3,11 +3,12 @@ int attr show_fps 0x7f010000
 int dimen activity_horizontal_margin 0x7f050000
 int dimen activity_vertical_margin 0x7f050001
 int drawable ic_launcher 0x7f020000
-int id action_settings 0x7f040006
+int id action_settings 0x7f040007
 int id any 0x7f040000
 int id back 0x7f040001
 int id background 0x7f040004
 int id camerapreview 0x7f040003
+int id convertpicture 0x7f040006
 int id front 0x7f040002
 int id takepicture 0x7f040005
 int layout activity_main 0x7f030000
@@ -18,6 +19,8 @@ int string app_name 0x7f060000
 int string button_capture 0x7f060003
 int string desc 0x7f060004
 int string hello_world 0x7f060002
+int string process_button1 0x7f060006
+int string title_activity_progressdialog 0x7f060005
 int style AppBaseTheme 0x7f070000
 int style AppTheme 0x7f070001
 int[] styleable CameraBridgeViewBase { 0x7f010000, 0x7f010001 }

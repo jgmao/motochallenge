@@ -17,9 +17,11 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
@@ -56,12 +58,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	private Bitmap bitmap;
 	private ImageView imageView;
     private String text;
-    
+    // add process bar for converting process
+    ProgressDialog progress;
+	Handler updateBarHandler;
+	
+
 	@SuppressWarnings("deprecation")
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         getWindow().setFormat(PixelFormat.UNKNOWN);
 	    surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
@@ -74,28 +81,27 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	    View viewControl = controlInflater.inflate(R.layout.control, null);
 	    LayoutParams layoutParamsControl = new LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.FILL_PARENT);
 	    this.addContentView(viewControl, layoutParamsControl);
+	    
 	    buttonTakePicture = (Button)findViewById(R.id.takepicture);
 	    buttonTakePicture.setOnClickListener(new Button.OnClickListener(){
-
 	    @Override
-	    public void onClick(View arg0) {
-	    
+	    public void onClick(View arg0) {	    
 	     camera.takePicture(myShutterCallback,myPictureCallback_RAW, myPictureCallback_JPG);
 	    }});
+	    
+		// set the autofocus function for the camera
 	    LinearLayout layoutBackground = (LinearLayout)findViewById(R.id.background);
 		layoutBackground.setOnClickListener(new LinearLayout.OnClickListener(){
-
 		@Override
 		public void onClick(View arg0) {
-		   
-
 		  buttonTakePicture.setEnabled(false);
 		  camera.autoFocus(myAutoFocusCallback);
 		}});
-
-        //this.imageView = (ImageView)this.findViewById(R.id.imageView1);
-  
+		
+		// progress bar
+		updateBarHandler = new Handler();
 	}
+
 	AutoFocusCallback myAutoFocusCallback = new AutoFocusCallback(){
 		  @Override
 		  public void onAutoFocus(boolean arg0, Camera arg1) {
@@ -103,6 +109,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		   buttonTakePicture.setEnabled(true);
 		  }
     };
+    
     ShutterCallback myShutterCallback = new ShutterCallback(){
 
 		 @Override
@@ -113,9 +120,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	};
 	PictureCallback myPictureCallback_RAW = new PictureCallback(){
 		 @Override
-		 public void onPictureTaken(byte[] arg0, Camera arg1) {
-		  
-
+		 public void onPictureTaken(byte[] arg0, Camera arg1) {		  
 		 }
 	};
 	
@@ -139,6 +144,41 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		  
 		 }
 	};
+	
+	// add progressing bar
+	public void showprocessbar(View view){
+		progress = new ProgressDialog(this);
+		progress.setMessage("Processing image:)");
+		progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		progress.setProgress(0);
+		progress.setMax(100);
+//		progress.setIndeterminate(true);
+		progress.show();
+		
+		
+		final Thread t = new Thread(){
+			@Override
+			public void run(){
+				try{
+					while(progress.getProgress() <= progress.getMax()){
+						Thread.sleep(2000);
+						updateBarHandler.post(new Runnable(){
+							public void run(){
+								progress.incrementProgressBy(5);
+							}
+						});
+						if(progress.getProgress() == progress.getMax())
+						{
+							progress.dismiss();
+						}
+					}
+				}catch(Exception e){
+					
+				}
+			}
+		};
+		t.start();
+	}
 		  
 //	//@Override
 //    public void onClick(View view) {

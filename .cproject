@@ -26,9 +26,9 @@
 							<tool id="org.eclipse.cdt.build.core.settings.holder.809455586" name="GNU C++" superClass="org.eclipse.cdt.build.core.settings.holder">
 								<option id="org.eclipse.cdt.build.core.settings.holder.incpaths.1901341597" name="Include Paths" superClass="org.eclipse.cdt.build.core.settings.holder.incpaths" valueType="includePath">
 									<listOptionValue builtIn="false" value="&quot;${NDKROOT}/platforms/android-9/arch-arm/usr/include&quot;"/>
-									<listOptionValue builtIn="false" value="&quot;${NDKROOT}/sources/cxx-stl/gnu-libstdc++/libs/armeabi-v7a/include&quot;"/>
 									<listOptionValue builtIn="false" value="/home/guoxin/Projects/adt/OpenCV-2.4.8-android-sdk/sdk/native/jni/include"/>
 									<listOptionValue builtIn="false" value="&quot;${NDKROOT}/sources/cxx-stl/gnu-libstdc++/4.6/include&quot;"/>
+									<listOptionValue builtIn="false" value="&quot;${NDKROOT}/sources/cxx-stl/gnu-libstdc++/4.6/libs/armeabi-v7a/include&quot;"/>
 								</option>
 								<inputType id="org.eclipse.cdt.build.core.settings.holder.inType.416333154" languageId="org.eclipse.cdt.core.g++" languageName="GNU C++" sourceContentType="org.eclipse.cdt.core.cxxSource,org.eclipse.cdt.core.cxxHeader" superClass="org.eclipse.cdt.build.core.settings.holder.inType"/>
 							</tool>

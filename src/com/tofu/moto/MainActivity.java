@@ -44,7 +44,8 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.graphics.Bitmap;
+import android.widget.TextView;
+
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -56,19 +57,20 @@ import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
 
 
-public class MainActivity extends Activity implements SurfaceHolder.Callback{
+public class MainActivity extends Activity{
 
-	Camera camera;
-	SurfaceView surfaceView;
-	SurfaceHolder surfaceHolder;
-	boolean previewing = false;;
-	LayoutInflater controlInflater = null;
-    private Thread thread;
+	//Camera camera;
+	//SurfaceView surfaceView;
+	//SurfaceHolder surfaceHolder;
+	//boolean previewing = false;;
+	//LayoutInflater controlInflater = null;
+    //private Thread thread;
 	Button buttonTakePicture;
-	
+	Canvas canvas;
 	static final int REQUEST_IMAGE_CAPTURE = 1;
 	private Bitmap bitmap;
 	private ImageView imageView;
+	private TextView myTextView;
     private String text;
     // add process bar for converting process
     ProgressDialog progress;
@@ -76,6 +78,23 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	public native void FindFeatures(long matAddrGr, long matAddrRgba);
 	private static final String    TAG = "Moto::MainActivity";
 
+	
+	public class SurfaceThread extends Thread {
+		private SurfaceHolder surfaceHolder;
+		private SurfaceView  surfaceview;
+		
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -100,12 +119,23 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
     @Override
     public void onResume()
     {
+    	
         super.onResume();
         OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_8, this, mLoaderCallback);
     }
 
     
+    @Override  
+	protected void onStop() {  
+		super.onStop();  
+	}   
+
+    @Override  
+    public void onPause(){  
+         super.onPause();  
+    }  
     
+  
 	@SuppressWarnings("deprecation")
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -131,7 +161,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	    buttonTakePicture.setOnClickListener(new Button.OnClickListener(){
 	    @Override
 	    public void onClick(View arg0) {	    
-	     camera.takePicture(myShutterCallback,myPictureCallback_RAW, myPictureCallback_JPG);
+	     
+	    	camera.takePicture(myShutterCallback,myPictureCallback_RAW, myPictureCallback_JPG);
+	    	canvas = surfaceHolder.lockCanvas();
+	    	canvas.setBitmap(bitmap);
+	        surfaceHolder.unlockCanvasAndPost(canvas);
+	     
 	    }});
 	    
 		// set the autofocus function for the camera
@@ -196,7 +231,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		   gryMat1.release();
 		   bitmap = Bitmap.createBitmap(dstWidth,dstHeight,Config.ARGB_8888);
 		   Utils.matToBitmap(gryMat2, bitmap);
-		 
+		   
 		  //Bitmap mutableBitmap = Bitmap.createScaledBitmap(bitmap, dstWidth, dstHeight, false).copy(Bitmap.Config.ARGB_8888, true);
 		  //Canvas canvas = new Canvas(mutableBitmap);
 		  //surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
@@ -204,6 +239,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		  try {
 			showprocessbar(surfaceView);
 			text = tess(bitmap);
+			myTextView = (TextView) findViewById(R.id.textView1);
+			myTextView.setText(text);
 			Log.i(TAG,text);
 			//System.out.println(text);
 			///test test test

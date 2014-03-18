@@ -39,7 +39,9 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-
+import org.opencv.android.*;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.core.*;
 public class MainActivity extends Activity implements SurfaceHolder.Callback{
 
 	Camera camera;
@@ -123,6 +125,9 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		 public void onPictureTaken(byte[] arg0, Camera arg1) {
 	
 		  bitmap = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
+		  Mat myMat = new Mat(bitmap.getHeight(),bitmap.getWidth(),CvType.CV_8U,new Scalar(4));
+		  Utils.bitmapToMat(bitmap, myMat);
+		  
 		  try {
 			text = tess(bitmap);
 			System.out.println(text);

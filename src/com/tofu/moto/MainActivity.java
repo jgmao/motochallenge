@@ -22,6 +22,7 @@ import android.provider.MediaStore;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
@@ -37,6 +38,7 @@ import android.hardware.Camera.ShutterCallback;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -59,16 +61,17 @@ import org.opencv.imgproc.Imgproc;
 
 public class MainActivity extends Activity{
 
-	//Camera camera;
+	Camera camera;
 	//SurfaceView surfaceView;
 	//SurfaceHolder surfaceHolder;
 	//boolean previewing = false;;
-	//LayoutInflater controlInflater = null;
+	LayoutInflater controlInflater = null;
     //private Thread thread;
 	Button buttonTakePicture;
 	Canvas canvas;
 	static final int REQUEST_IMAGE_CAPTURE = 1;
 	private Bitmap bitmap;
+	private boolean previewing = false;
 	private ImageView imageView;
 	private TextView myTextView;
     private String text;
@@ -80,20 +83,121 @@ public class MainActivity extends Activity{
 
 	
 	public class SurfaceThread extends Thread {
-		private SurfaceHolder surfaceHolder;
-		private SurfaceView  surfaceview;
+		private SurfaceHolder mSurfaceHolder;
+		private CameraView  mSurfaceView;
+		private boolean running = false;
+		
+		public SurfaceThread(SurfaceHolder surfaceHolder, CameraView surfaceView)
+		{
+			mSurfaceHolder = surfaceHolder;
+			mSurfaceView = surfaceView;
+		}
+		public void setRunning(boolean r)
+		{
+			running = r;
+		}
+		@Override
+		public void run() {
+		// TODO Auto-generated method stub
+		//super.run();
+		while (running) {
+		             Canvas c = null;
+		             try {
+		                 c = mSurfaceHolder.lockCanvas(null);
+		                 synchronized (mSurfaceHolder) {
+		                     mSurfaceView.draw(c);
+		                 }
+		             } finally {
+		                 // do this in a finally so that if an exception is thrown
+		                 // during the above, we don't leave the Surface in an
+		                 // inconsistent state
+		                 if (c != null) {
+		                  mSurfaceHolder.unlockCanvasAndPost(c);
+		                 }
+		             }
+		         }
+		}
+	}
+	public class CameraView extends SurfaceView implements SurfaceHolder.Callback {
+		private SurfaceThread thread;
+		LayoutInflater controlInflater = null;
+		Camera camera;
+		@Override
+		protected void onDraw(Canvas canvas) {
+		// TODO Auto-generated method stub
+		super.onDraw(canvas);
+		//if(drawing){
+		// super.onDraw(canvas);
+		//	}
+		}
+		
+		public CameraView(Context context) {
+			super(context);
+			//SurfaceView surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
+		    //SurfaceHolder surfaceHolder = surfaceView.getHolder();
+		    //surfaceHolder.addCallback(this);
+			
+			//thread = new SurfaceThread(surfaceHolder,this);
+			
+			
+			// TODO Auto-generated constructor stub
+			init();
+		}
+		
+		
+		private void init(){
+			getHolder().addCallback(this);
+			thread = new SurfaceThread(getHolder(),this);
+			setFocusable(true);
+		}
+		@Override
+		public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+		
+		  if(previewing){
+		    camera.stopPreview();
+		    previewing = false;
+		  }
+	     
+	      
+		  if (camera != null){
+		    // camera.setPreviewDisplay(getHolder());
+		      camera.startPreview();
+		      previewing = true;
+		  }
+		}
+		@Override
+		public void surfaceCreated(SurfaceHolder holder) {
+		  thread.setRunning(true);
+		  thread.start();
+		  //camera.setPreviewDisplay(holder);
+		  camera = Camera.open();
+		  try {
+			camera.setPreviewDisplay(holder);
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		}
+		@Override
+		public void surfaceDestroyed(SurfaceHolder holder) {
+		  camera.stopPreview();
+		  camera.release();
+		  camera = null;
+		  previewing = false;
+		}
+		
+
+		@Override
+		public boolean onTouchEvent(MotionEvent event) {
+			// TODO Auto-generated method stub
+			buttonTakePicture.setEnabled(false);
+			camera.autoFocus(myAutoFocusCallback);
+			return super.onTouchEvent(event);
+			//return true;
+		}
+		
 		
 	}
-	
-	
-	
-	
-	
-	
-	
-	
-	
-	
 	
 	private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -140,15 +244,16 @@ public class MainActivity extends Activity{
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        CameraView mySurfaceView = new CameraView(this);
+        setContentView(mySurfaceView);
         
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         getWindow().setFormat(PixelFormat.UNKNOWN);
-	    surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
-	    surfaceHolder = surfaceView.getHolder();
-	    surfaceHolder.addCallback(this);
+	    //surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
+	    //surfaceHolder = surfaceView.getHolder();
+	    //surfaceHolder.addCallback(this);
 	    //if(Build.VERSION.SDK_INT < Build.VERSION_CODES.HONEYCOMB)
-	    surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+	    //surfaceHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
        // imageView = (ImageView) findViewById(R.id.imageView1);
 	    controlInflater = LayoutInflater.from(getBaseContext());
 	    View viewControl = controlInflater.inflate(R.layout.control, null);
@@ -163,20 +268,20 @@ public class MainActivity extends Activity{
 	    public void onClick(View arg0) {	    
 	     
 	    	camera.takePicture(myShutterCallback,myPictureCallback_RAW, myPictureCallback_JPG);
-	    	canvas = surfaceHolder.lockCanvas();
-	    	canvas.setBitmap(bitmap);
-	        surfaceHolder.unlockCanvasAndPost(canvas);
+//	    	canvas = surfaceHolder.lockCanvas();
+//	    	canvas.setBitmap(bitmap);
+//	        surfaceHolder.unlockCanvasAndPost(canvas);
 	     
 	    }});
 	    
 		// set the autofocus function for the camera
-	    LinearLayout layoutBackground = (LinearLayout)findViewById(R.id.background);
-		layoutBackground.setOnClickListener(new LinearLayout.OnClickListener(){
-		@Override
-		public void onClick(View arg0) {
-		  buttonTakePicture.setEnabled(false);
-		  camera.autoFocus(myAutoFocusCallback);
-		}});
+//	    LinearLayout layoutBackground = (LinearLayout)findViewById(R.id.background);
+//		layoutBackground.setOnClickListener(new LinearLayout.OnClickListener(){
+//		@Override
+//		public void onClick(View arg0) {
+//		  buttonTakePicture.setEnabled(false);
+//		  camera.autoFocus(myAutoFocusCallback);
+//		}});
 		
 		
 		// progress bar
@@ -237,7 +342,7 @@ public class MainActivity extends Activity{
 		  //surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
 		  //surfaceView.draw(canvas);
 		  try {
-			showprocessbar(surfaceView);
+			//showprocessbar(surfaceView);
 			text = tess(bitmap);
 			myTextView = (TextView) findViewById(R.id.textView1);
 			myTextView.setText(text);
@@ -362,63 +467,6 @@ public class MainActivity extends Activity{
 		getMenuInflater().inflate(R.menu.main, menu);
 		return true;
 	}
-	@Override
-	public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-	
-	  if(previewing){
-	    camera.stopPreview();
-	    previewing = false;
-	  }
-     
-      
-	  if (camera != null){
-	    try {
-	      camera.setPreviewDisplay(surfaceHolder);
-	      camera.startPreview();
-	      previewing = true;
-	    } catch (IOException e) {
-	  
-	      e.printStackTrace();
-	    }
-	  }
-	}
-	@Override
-	public void surfaceCreated(SurfaceHolder holder) {
-	
-	  camera = Camera.open();
-	}
-	@Override
-	public void surfaceDestroyed(SurfaceHolder holder) {
-	  camera.stopPreview();
-	  camera.release();
-	  camera = null;
-	  previewing = false;
-	}
-    //	
-//    String mCurrentPhotoPath;
 
-//    private File createImageFile() throws IOException {
-//        // Create an image file name
-//        String timeStamp = new SimpleDateFormat("yyyyMMdd_HHmmss",Locale.US).format(new Date());
-//        String imageFileName = "JPEG_" + timeStamp + "_";
-//        // do public first for debug
-//        File storageDir = getCacheDir();
-//        /*File storageDir = Environment.getExternalStoragePublicDirectory(
-//                Environment.DIRECTORY_PICTURES);*/
-//        //private uses getExternalFilesDir()
-//        
-//        File image = File.createTempFile(
-//            imageFileName,  /* prefix */
-//            ".jpg",         /* suffix */
-//            storageDir      /* directory */
-//        );
-//
-//        // Save a file: path for use with ACTION_VIEW intents
-//        mCurrentPhotoPath = "file:" + image.getAbsolutePath();
-//        //debug only add to gallery
-//        //galleryAddPic();
-//        return image;
-//    }
-    
     
 }

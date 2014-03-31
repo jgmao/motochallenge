@@ -8,6 +8,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -18,7 +19,9 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.provider.CalendarContract;
 import android.provider.MediaStore;
+import android.provider.CalendarContract.Events;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ProgressDialog;
@@ -383,5 +386,25 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 //        return image;
 //    }
     
-    
+/////////////////add to calendar event//////////////
+	
+	public void addCalendarEvent(){
+		 
+	  	 Calendar testDate = Calendar.getInstance();
+		 testDate.set(Calendar.YEAR,2015);
+		 testDate.set(Calendar.MONTH, 2);
+		 testDate.set(Calendar.DAY_OF_MONTH, 20);
+		 testDate.set(Calendar.HOUR_OF_DAY, 12);
+		 testDate.set(Calendar.MINUTE, 35);
+		 String address = "Tech Room G221";
+
+	        
+
+	     Intent intent = new Intent(Intent.ACTION_INSERT);
+	     intent.setData(Events.CONTENT_URI);
+	     intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, testDate.getTime().getTime());
+	     intent.putExtra("eventLocation", address);
+	     startActivity(intent); 	        
+ 
+	}
 }

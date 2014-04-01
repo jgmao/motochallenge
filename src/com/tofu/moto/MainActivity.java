@@ -22,6 +22,8 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.SystemClock;
+import android.provider.CalendarContract;
+import android.provider.CalendarContract.Events;
 import android.provider.MediaStore;
 import android.annotation.TargetApi;
 import android.app.Activity;
@@ -78,6 +80,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
     ProgressDialog progress;
 	Handler updateBarHandler;
 	Button StartProgressBtn;
+	String myAddr;
 	
 	public native void FindFeatures(long matAddrGr, long matAddrRgba);
 	private static final String    TAG = "Moto::MainActivity";
@@ -140,7 +143,13 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	    View viewControl = controlInflater.inflate(R.layout.control, null);
 	    LayoutParams layoutParamsControl = new LayoutParams(LayoutParams.FILL_PARENT,LayoutParams.FILL_PARENT);
 	    this.addContentView(viewControl, layoutParamsControl);
+	
 	    
+	    progress = new ProgressDialog(this);
+		progress.setMessage("Processing");
+		progress.setCancelable(false);
+		progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+		
 	    //thread = new Thread(this);
 	    //thread.start();
 	    buttonTakePicture = (Button)findViewById(R.id.takepicture);
@@ -164,20 +173,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		// progress bar, modified on 4/1, added asynctask
 
 		
-		StartProgressBtn = (Button)findViewById(R.id.startprogress);
-		progress = new ProgressDialog(this);
-		progress.setMessage("Processing");
-		progress.setCancelable(false);
-		progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-		StartProgressBtn.setOnClickListener(new Button.OnClickListener(){
+		//StartProgressBtn = (Button)findViewById(R.id.startprogress);
 
-			@Override
-			public void onClick(View v){
+		//StartProgressBtn.setOnClickListener(new Button.OnClickListener(){
+
+		//	@Override
+		//	public void onClick(View v){
 		
-				new BackgroundAsyncTask().execute();
-				StartProgressBtn.setClickable(false);
-			}
-		});
+		//		new BackgroundAsyncTask().execute();
+		//		StartProgressBtn.setClickable(false);
+		//	}
+		//});
 		
 		
 	}
@@ -209,46 +215,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		 @Override
 		 public void onPictureTaken(byte[] arg0, Camera arg1) {
 			 
+			 
+		  
 
 	       bitmap = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
-	       int dstWidth = 800;
-		   int dstHeight = (int)( 800.0/(double)bitmap.getWidth()*(double)bitmap.getHeight());
-		  
-	       Mat myMat = new Mat(bitmap.getHeight(),bitmap.getWidth(),CvType.CV_8U,new Scalar(4));
-		   Utils.bitmapToMat(bitmap, myMat);
-		   Mat inMat = new Mat(dstHeight,dstWidth,CvType.CV_8U, new Scalar(4));
-		   Imgproc.resize(myMat, inMat, inMat.size(),0,0,Imgproc.INTER_CUBIC);
-		      
-		   Mat gryMat1 = new Mat(dstHeight,dstWidth,CvType.CV_8U);
-		   Mat gryMat2 = new Mat(dstHeight,dstWidth,CvType.CV_8U);
-		   Imgproc.cvtColor(inMat, gryMat1, Imgproc.COLOR_RGBA2GRAY);
-		  //binarization
-		  
-		   FindFeatures(gryMat1.getNativeObjAddr(), gryMat2.getNativeObjAddr());
-		   bitmap.recycle();
-		   myMat.release();
-		   inMat.release();
-		   gryMat1.release();
-		   bitmap = Bitmap.createBitmap(dstWidth,dstHeight,Config.ARGB_8888);
-		   Utils.matToBitmap(gryMat2, bitmap);
-		 
-		  //Bitmap mutableBitmap = Bitmap.createScaledBitmap(bitmap, dstWidth, dstHeight, false).copy(Bitmap.Config.ARGB_8888, true);
-		  //Canvas canvas = new Canvas(mutableBitmap);
-		  //surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
-		  //surfaceView.draw(canvas);
-		  try {
-			//showprocessbar(surfaceView);
-			text = tess(bitmap);
-			Log.i(TAG,text);
-			//match infor
-			fuzzyMatch(text);
-			//System.out.println(text);
-			///test test test
-		} catch (IOException e) {
-
-			e.printStackTrace();
-		}
-		  
+	      
+	       new BackgroundAsyncTask().execute();
 		 }
 	};
 	public void fuzzyMatch(String text)
@@ -336,6 +308,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		if (i>=0)
 		{
 			String temp = regex.getReplacement();
+			Log.i(TAG,temp);
 			SimpleDateFormat ft;
 			String pm = temp.substring(temp.length()-2,temp.length());
 			if (0==pm.compareTo("3m"))
@@ -388,6 +361,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 			}
 		
 		}
+		myAddr = addr1+addr2;
 	}
 	
 	// add progressing bar, add asynctask to solve multi-thread problem
@@ -402,13 +376,46 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	        }
 	        protected Void doInBackground(String... params) {
 	        	// do OCR Prcessing here, and update
-	        	// comment out the following while loop if not needed
-	            while (myProgressCount < 80) {
-	                  myProgressCount++;
+	        	
 
-	                  publishProgress(myProgressCount);
-	                  SystemClock.sleep(100);
-	            }
+	 	       int dstWidth = 800;
+	 		   int dstHeight = (int)( 800.0/(double)bitmap.getWidth()*(double)bitmap.getHeight());
+	 		  
+	 	       Mat myMat = new Mat(bitmap.getHeight(),bitmap.getWidth(),CvType.CV_8U,new Scalar(4));
+	 		   Utils.bitmapToMat(bitmap, myMat);
+	 		   Mat inMat = new Mat(dstHeight,dstWidth,CvType.CV_8U, new Scalar(4));
+	 		   Imgproc.resize(myMat, inMat, inMat.size(),0,0,Imgproc.INTER_CUBIC);
+	 		      
+	 		   Mat gryMat1 = new Mat(dstHeight,dstWidth,CvType.CV_8U);
+	 		   Mat gryMat2 = new Mat(dstHeight,dstWidth,CvType.CV_8U);
+	 		   Imgproc.cvtColor(inMat, gryMat1, Imgproc.COLOR_RGBA2GRAY);
+	 		  //binarization
+	 		  
+	 		   FindFeatures(gryMat1.getNativeObjAddr(), gryMat2.getNativeObjAddr());
+	 		   bitmap.recycle();
+	 		   myMat.release();
+	 		   inMat.release();
+	 		   gryMat1.release();
+	 		   bitmap = Bitmap.createBitmap(dstWidth,dstHeight,Config.ARGB_8888);
+	 		   Utils.matToBitmap(gryMat2, bitmap);
+	 		 
+	 		  //Bitmap mutableBitmap = Bitmap.createScaledBitmap(bitmap, dstWidth, dstHeight, false).copy(Bitmap.Config.ARGB_8888, true);
+	 		  //Canvas canvas = new Canvas(mutableBitmap);
+	 		  //surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
+	 		  //surfaceView.draw(canvas);
+	 		  try {
+	 			//showprocessbar(surfaceView);
+	 			text = tess(bitmap);
+	 			Log.i(TAG,text);
+	 			//match infor
+	 			fuzzyMatch(text);
+	 			//System.out.println(text);
+	 			///test test test
+	 		  } catch (IOException e) {
+
+	 			e.printStackTrace();
+	 		  }
+	     
 	            return null;
 	        }
 	        @Override
@@ -420,9 +427,12 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	        @Override
 	        protected void onPostExecute(Void result) {
 	        	// after processing, display result or do the calendar event
+	        	addCalendarEvent(beginTime, myAddr);
+
 	        	super.onPostExecute(result);
 	        	progress.dismiss();
-	            StartProgressBtn.setClickable(true);
+	            //StartProgressBtn.setClickable(true);
+	            
 	        }
 	 
 		}
@@ -564,21 +574,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
     
 /////////////////add to calendar event//////////////
 	
-	public void addCalendarEvent(){
+	public void addCalendarEvent(Calendar cal, String address){
 		 
-	  	 Calendar testDate = Calendar.getInstance();
-		 testDate.set(Calendar.YEAR,2015);
-		 testDate.set(Calendar.MONTH, 2);
-		 testDate.set(Calendar.DAY_OF_MONTH, 20);
-		 testDate.set(Calendar.HOUR_OF_DAY, 12);
-		 testDate.set(Calendar.MINUTE, 35);
-		 String address = "Tech Room G221";
-
-	        
-
+//	  	 Calendar testDate = Calendar.getInstance();
+//		 testDate.set(Calendar.YEAR,cal.YEAR);
+//		 testDate.set(Calendar.MONTH, cal.MONTH);
+//		 testDate.set(Calendar.DAY_OF_MONTH, cal.DAY_OF_MONTH);
+//		 testDate.set(Calendar.HOUR_OF_DAY, cal.HOUR_OF_DAY);
+//		 testDate.set(Calendar.MINUTE, cal.MINUTE);       
 	     Intent intent = new Intent(Intent.ACTION_INSERT);
 	     intent.setData(Events.CONTENT_URI);
-	     intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, testDate.getTime().getTime());
+	     intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, cal.getTime().getTime());
 	     intent.putExtra("eventLocation", address);
 	     startActivity(intent); 	        
  

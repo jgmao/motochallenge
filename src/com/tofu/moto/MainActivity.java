@@ -73,9 +73,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	private Bitmap bitmap;
 	private ImageView imageView;
     private String text;
-    // add process bar for converting process
+    // add process bar for converting process, modified on 4/1
     ProgressDialog progress;
 	Handler updateBarHandler;
+	Button StartProgressBtn;
+	
 	public native void FindFeatures(long matAddrGr, long matAddrRgba);
 	private static final String    TAG = "Moto::MainActivity";
 
@@ -148,7 +150,23 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		
 		
 		// progress bar
-		updateBarHandler = new Handler();
+		// progress bar, modified on 4/1, added asynctask
+
+		
+		StartProgressBtn = (Button)findViewById(R.id.startprogress);
+		progress = new ProgressDialog(this);
+		progress.setMessage("Processing");
+		progress.setCancelable(false);
+		progress.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+		StartProgressBtn.setOnClickListener(new OnClickListener(){
+
+			@Override
+			public void onClick(View v){
+		
+				new BackgroundAsyncTask().execute();
+				StartProgressBtn.setClickable(false);
+			}
+		});
 		
 		
 	}
@@ -218,40 +236,45 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		 }
 	};
 	
-	// add progressing bar
-	public void showprocessbar(View view){
-		progress = new ProgressDialog(this);
-		progress.setMessage("Processing image:)");
-		progress.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		progress.setProgress(0);
-		progress.setMax(100);
-//		progress.setIndeterminate(true);
-		progress.show();
+	
+	// add progressing bar, add asynctask to solve multi-thread problem
+		public class BackgroundAsyncTask extends AsyncTask<String, Integer, Void>{
+	        int myProgressCount;
+
+	        @Override
+	        protected void onPreExecute() {
+	        	// show the processing bar
+	        	super.onPreExecute();
+	        	progress.show();
+	        }
+	        protected Void doInBackground(String... params) {
+	        	// do OCR Prcessing here, and update
+	        	// comment out the following while loop if not needed
+	            while (myProgressCount < 80) {
+	                  myProgressCount++;
+
+	                  publishProgress(myProgressCount);
+	                  SystemClock.sleep(100);
+	            }
+	            return null;
+	        }
+	        @Override
+	        protected void onProgressUpdate(Integer... values) {
+	        	// update the processing bar, no need to be modified
+	        	super.onProgressUpdate(values);
+	        }
+
+	        @Override
+	        protected void onPostExecute(Void result) {
+	        	// after processing, display result or do the calendar event
+	        	super.onPostExecute(result);
+	        	progress.dismiss();
+	            StartProgressBtn.setClickable(true);
+	        }
+	 
+		}
 		
-		
-		final Thread t = new Thread(){
-			@Override
-			public void run(){
-				try{
-					while(progress.getProgress() <= progress.getMax()){
-						Thread.sleep(2000);
-						updateBarHandler.post(new Runnable(){
-							public void run(){
-								progress.incrementProgressBy(20);
-							}
-						});
-						if(progress.getProgress() == progress.getMax())
-						{
-							progress.dismiss();
-						}
-					}
-				}catch(Exception e){
-					
-				}
-			}
-		};
-		t.start();
-	}
+	
 		  
 //	//@Override
 //    public void onClick(View view) {

@@ -7,7 +7,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -54,7 +56,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Scalar;
 import org.opencv.imgproc.Imgproc;
-
+import net.java.frej.*;
 
 public class MainActivity extends Activity implements SurfaceHolder.Callback{
 
@@ -65,7 +67,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	LayoutInflater controlInflater = null;
     private Thread thread;
 	Button buttonTakePicture;
-	
+	Calendar beginTime;
 	static final int REQUEST_IMAGE_CAPTURE = 1;
 	private Bitmap bitmap;
 	private ImageView imageView;
@@ -75,7 +77,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	Handler updateBarHandler;
 	public native void FindFeatures(long matAddrGr, long matAddrRgba);
 	private static final String    TAG = "Moto::MainActivity";
-
+	
+	
 	private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
         public void onManagerConnected(int status) {
@@ -109,6 +112,15 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	@SuppressWarnings("deprecation")
 	@Override
     protected void onCreate(Bundle savedInstanceState) {
+		
+		 
+		//   text = "Date: Friday, May,.March 28, 2014 at 10:303m\n"+
+		//		  "Location: 2145 Sheridan Road\n" +
+	//			  "Tech Room B211\n"+
+	//			  "Seminar Host: Prof. Dongning Guo\n"+
+//				  "Contact/or more information: Lana Kl'perman, 8474670028, IanaQeecs.narthwestern.edu\n";
+//		   fuzzyMatch(text);
+		
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         
@@ -176,6 +188,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 
 		 @Override
 		 public void onPictureTaken(byte[] arg0, Camera arg1) {
+			 
+
 	       bitmap = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
 	       int dstWidth = 800;
 		   int dstHeight = (int)( 800.0/(double)bitmap.getWidth()*(double)bitmap.getHeight());
@@ -188,6 +202,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		   Mat gryMat1 = new Mat(dstHeight,dstWidth,CvType.CV_8U);
 		   Mat gryMat2 = new Mat(dstHeight,dstWidth,CvType.CV_8U);
 		   Imgproc.cvtColor(inMat, gryMat1, Imgproc.COLOR_RGBA2GRAY);
+		  //binarization
 		  
 		   FindFeatures(gryMat1.getNativeObjAddr(), gryMat2.getNativeObjAddr());
 		   bitmap.recycle();
@@ -202,9 +217,11 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		  //surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
 		  //surfaceView.draw(canvas);
 		  try {
-			showprocessbar(surfaceView);
+			//showprocessbar(surfaceView);
 			text = tess(bitmap);
 			Log.i(TAG,text);
+			//match infor
+			fuzzyMatch(text);
 			//System.out.println(text);
 			///test test test
 		} catch (IOException e) {
@@ -214,7 +231,144 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		  
 		 }
 	};
-	
+	public void fuzzyMatch(String text)
+	{
+		//preprocessing of text
+		//beginTime = Calendar.getInstance();
+		String line =text;
+		Regex regex;
+//		String pattern = "[^\n" +
+//				"@loc\n"+
+//				"]\n"+ //regex
+//				"::loc\n"+//def sub str
+//				"(^add,addr*,address,location)\n";
+		//match location/address
+		String addr1="";
+		String addr2="";
+		String tm="";
+		String pattern = "{(^location,addr*)~A}|$A";
+		Log.i(TAG,pattern);
+		String punctuators = ",";
+		double threshold = -1;
+		regex = new Regex(pattern, threshold, punctuators);
+		boolean b = regex.match(line);
+		int i = regex.presentInSequence(line);
+		if (i>=0)
+		{
+			String suffix = regex.suffix();
+			int j = suffix.length();
+			if (j>40)
+				j=40;
+			line = suffix.substring(0,j);
+		}
+		//match street line
+		pattern = "((#)~A, (!\\[A-Za-z\\]+)~B, (^Street,St,Road, Rd, Building, Avenue, Ave*, Lane, Place, Pl)~C)|$A_$B_$C";
+		//((#)~A, (!\[A-Za-z\]+)~B, (^Street,St,Room,Road, Rd, Building, Avenue, Ave*, Lane, Place, Pl)~C, (^(Apt*, Room, Rm, Fl*),(!\[A-Za-z\]+))~D,(^(Apt*, Room, Rm, Fl*),(!\[A-Za-z\]+))~E,(=(#),(!\[A-Za-z\]*))~F)|$A_$B_$C_$D_$E_$F
+		//pattern = "{(^(?\b+)~A,(^street,st,room,building, avenue, ave*, lane, place, pl)~B,(#)~C)}|Location_$A_$B_$C";
+		Log.i(TAG,line);
+		regex = new Regex(pattern);
+		i = regex.presentInSequence(line);
+		//regex.matchFromStart(seq)
+		if (i>=0)
+		{
+			int j = regex.getMatchEnd();
+			 addr1= regex.getReplacement();
+			 String left = line.substring(0, i);
+			 String right = line.substring(j+1, line.length());
+			 line = left+right;
+		}
+		//match second level address
+		pattern = "((^(^Apt*, Room, Rm, Fl*),(!\\[A-Za-z\\]+))~D,(?(^Apt*, Room, Rm, Fl*))~E,(=(#),(!\\[A-Za-z\\]*))~F)|$D_$E_$F";
+		
+		Log.i(TAG,line);
+		regex = new Regex(pattern);
+		i = regex.presentInSequence(line);
+		if (i>=0)
+		{
+			addr2 = regex.getReplacement();
+		}
+		
+		//match date/time
+		line = text;
+		pattern = "(^date,time)";
+		regex = new Regex(pattern);
+		i = regex.presentInSequence(line);
+		if (i>=0)
+		{
+			String suffix = regex.suffix();
+			int j = suffix.length();
+			if (j>40)
+				j=40;
+			line = suffix.substring(0,j);
+		}
+		//intent.putExtra("eventLocation", myAddress)
+		//match format hh/mm? Friday, month, day, year, hh/mm?
+//		pattern = "((?^Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Mon, Tue, Wed, Thu, Fri, Sat, Sun)~A,"+
+//				  "(?^January, February, March, April, May, June, July, August, September, October, November, December, Jan, Feb, Mar, Apr, May, Jun,  Jul,  Aug, Sep, Oct, Nov, Dec)~B,"+
+//				  "(#31)~C, (#2000:2500)~D, (?^on, at, in), ((#),(?:),(?#), (?!\\[a-zA-Z\\]+))~E)|$A_$B_$C_$D_$E";
+//		
+		pattern="((?^Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Mon, Tue, Wed, Thu, Fri, Sat, Sun)~W,"+
+				"(^January, February, March, April, May, June, July, August, September, October, November, December, Jan, Feb, Mar, Apr, May, Jun,  Jul,  Aug, Sep, Oct, Nov, Dec)~B,"+
+				"(#31)~D, (#2000:2500)~Y, (?^on, at, in), (?(#)~N,(?:),(?#60)~K, (?^pm,am,3m)~L)"+
+				")|$Y/$B/$D/$N/$K/$L";
+		regex = new Regex(pattern);
+		i = regex.presentInSequence(line);
+		if (i>=0)
+		{
+			String temp = regex.getReplacement();
+			SimpleDateFormat ft;
+			String pm = temp.substring(temp.length()-2,temp.length());
+			if (0==pm.compareTo("3m"))
+			{
+				temp = temp.substring(0,temp.length()-2);
+				temp = temp + "am";
+			}
+			int count=0;
+			int j = temp.lastIndexOf("/");
+			while (j==temp.length()-1)
+			{
+				count++;
+				temp = temp.substring(0, j);
+				j=temp.lastIndexOf("/");
+			}
+			
+			if (count==0)
+				ft = new SimpleDateFormat("yyyy/MMMM/dd/hh/mm/a");
+			else if (count==1)
+				ft = new SimpleDateFormat("yyyy/MMMM/dd/hh/mm");
+			else if (count==2)
+				ft = new SimpleDateFormat("yyyy/MMMM/dd/hh");
+			else
+				ft = new SimpleDateFormat("yyyy/MMMM/dd");
+			try {
+				ft.parse(temp);
+				beginTime = ft.getCalendar();
+			} catch (ParseException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		else
+		{
+			pattern="((#12)~A,(#31)~B,(#2000:2500)~C)|$A/B/$C";
+			regex = new Regex(pattern);
+			if (i>=0)
+			{
+				
+				String temp = regex.getReplacement();
+				SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd");
+				try {
+					ft.parse(temp);
+					beginTime = ft.getCalendar();
+				} catch (ParseException e) {
+				// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		
+		}
+	}
 	// add progressing bar
 	public void showprocessbar(View view){
 		progress = new ProgressDialog(this);

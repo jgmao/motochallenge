@@ -27,8 +27,10 @@ import android.provider.CalendarContract.Events;
 import android.provider.MediaStore;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.AssetManager;
@@ -65,8 +67,9 @@ import org.opencv.imgproc.Imgproc;
 import net.java.frej.*;
 
 public class MainActivity extends Activity implements SurfaceHolder.Callback{
-	Dialog dialog;
+	boolean noValidData;
 	Camera camera;
+	final Context context = this;
 	SurfaceView surfaceView;
 	SurfaceHolder surfaceHolder;
 	boolean previewing = false;;
@@ -132,7 +135,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        
+        noValidData = false;
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE);
         getWindow().setFormat(PixelFormat.UNKNOWN);
 	    surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
@@ -220,10 +223,10 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 			 
 		  beginTime = null; //Calendar.getInstance();
 		  myAddr = "";
-	       bitmap = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
-	      
-	       new BackgroundAsyncTask().execute();
-		 }
+	      bitmap = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
+	      new BackgroundAsyncTask().execute();
+	     
+	     }
 	};
 	public void fuzzyMatch(String text)
 	{
@@ -649,11 +652,19 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	     }
 	     catch (NullPointerException e)
 	     {
-	    	 e.printStackTrace();
-	    	 Log.i(TAG,"no valid date found!\n");
-	    	 
-	    	 camera.startPreview();
-		      previewing = true;
+	    	 noValidData = true;
+	    	 Log.i(TAG,"no valid data");
+	    	 if (noValidData)
+		      {
+		      AlertDialog.Builder box = new AlertDialog.Builder(context);
+			  box.setNeutralButton("OK", null);
+			  box.setMessage("Can not find valid info, try again!");
+			  AlertDialog alertDialog = box.create();
+			  alertDialog.show();
+			  noValidData = false;
+			  camera.startPreview();
+			  previewing = true;
+		      }  
 	    	 return;
 	     }
 	}

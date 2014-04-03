@@ -27,6 +27,7 @@ import android.provider.CalendarContract.Events;
 import android.provider.MediaStore;
 import android.annotation.TargetApi;
 import android.app.Activity;
+import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -40,6 +41,7 @@ import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -63,7 +65,7 @@ import org.opencv.imgproc.Imgproc;
 import net.java.frej.*;
 
 public class MainActivity extends Activity implements SurfaceHolder.Callback{
-
+	Dialog dialog;
 	Camera camera;
 	SurfaceView surfaceView;
 	SurfaceHolder surfaceHolder;
@@ -216,8 +218,8 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		 public void onPictureTaken(byte[] arg0, Camera arg1) {
 			 
 			 
-		  
-
+		  beginTime = null; //Calendar.getInstance();
+		  myAddr = "";
 	       bitmap = BitmapFactory.decodeByteArray(arg0, 0, arg0.length);
 	      
 	       new BackgroundAsyncTask().execute();
@@ -254,15 +256,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 			line = suffix.substring(0,j);
 		}
 		//match street line
-		pattern = "((#)~A, (!\\[A-Za-z\\]+)~B, (^Street,St,Road, Rd, Building, Avenue, Ave*, Lane, Place, Pl)~C)|$A_$B_$C";
+		pattern = "((#)~A, (!\\[A-Za-z\\]+)~B, (^Street,St.,Road, Rd., Building, Avenue, Ave., Lane, Place, Pl.)~C)|$A_$B_$C";
 		//((#)~A, (!\[A-Za-z\]+)~B, (^Street,St,Room,Road, Rd, Building, Avenue, Ave*, Lane, Place, Pl)~C, (^(Apt*, Room, Rm, Fl*),(!\[A-Za-z\]+))~D,(^(Apt*, Room, Rm, Fl*),(!\[A-Za-z\]+))~E,(=(#),(!\[A-Za-z\]*))~F)|$A_$B_$C_$D_$E_$F
 		//pattern = "{(^(?\b+)~A,(^street,st,room,building, avenue, ave*, lane, place, pl)~B,(#)~C)}|Location_$A_$B_$C";
 		Log.i(TAG,line);
 		regex = new Regex(pattern);
 		i = regex.presentInSequence(line);
+		boolean locnotfound = true;
 		//regex.matchFromStart(seq)
 		if (i>=0)
 		{
+			locnotfound = false;
 			int j = regex.getMatchEnd();
 			 addr1= regex.getReplacement();
 			 String left = line.substring(0, i);
@@ -270,20 +274,26 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 			 line = left+right;
 		}
 		//match second level address
-		pattern = "((^(^Apt*, Room, Rm, Fl*),(!\\[A-Za-z\\]+))~D,(?(^Apt*, Room, Rm, Fl*))~E,(=(#),(!\\[A-Za-z\\]*))~F)|$D_$E_$F";
+		pattern = "((^Apt*, Room, Rm., Floor, Fl., Tech)~D,(?(^Apt*, Room, Rm, Fl*))~E,(=(#),(!\\[A-Za-z\\]*))~F)|$D_$E_$F";
 		
 		Log.i(TAG,line);
 		regex = new Regex(pattern);
 		i = regex.presentInSequence(line);
 		if (i>=0)
 		{
+			locnotfound = false;
 			addr2 = regex.getReplacement();
 		}
-		
+		if (locnotfound)
+		{
+			i = line.indexOf("\n");
+			addr1 = line.substring(0,i);
+		}
+			
 		//match date/time
 		line = text;
 		pattern = "(^date,time)";
-		regex = new Regex(pattern);
+		regex = new Regex(pattern,0,",");
 		i = regex.presentInSequence(line);
 		if (i>=0)
 		{
@@ -301,7 +311,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 //		
 		pattern="((?^Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Mon, Tue, Wed, Thu, Fri, Sat, Sun)~W,"+
 				"(^January, February, March, April, May, June, July, August, September, October, November, December, Jan, Feb, Mar, Apr, May, Jun,  Jul,  Aug, Sep, Oct, Nov, Dec)~B,"+
-				"(#31)~D, (#2000:2500)~Y, (?^on, at, in), (?(#)~N,(?:),(?#60)~K, (?^pm,am,3m)~L)"+
+				"(#31)~D, (#2000:2500)~Y, (?^on, at, in), (?(#)~N,(?:),(?#0:59)~K, (?^pm,am)~L)"+
 				")|$Y/$B/$D/$N/$K/$L";
 		regex = new Regex(pattern);
 		i = regex.presentInSequence(line);
@@ -344,13 +354,30 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		}
 		else
 		{
-			pattern="((#12)~A,(#31)~B,(#2000:2500)~C)|$A/B/$C";
+			//match time:
+			
+			pattern=  "((#24)~N,(?:),(#0:59)~K, (?^pm,am)~L)|/$N/$K/$L";
 			regex = new Regex(pattern);
+			i = regex.presentInSequence(line);
+			String time ="";
+			if (i>=0)
+			{
+				
+				time = regex.getReplacement();
+			}
+			pattern="((#12)~A,(\\/),(#31)~B,(\\/),(#2000:2500)~C)|$C/$A/$B";
+			regex = new Regex(pattern);
+			i = regex.presentInSequence(line);
 			if (i>=0)
 			{
 				
 				String temp = regex.getReplacement();
-				SimpleDateFormat ft = new SimpleDateFormat("yyyy/MM/dd");
+				temp = temp+time;
+				SimpleDateFormat ft ;
+				if (time.length()>1)
+					ft = new SimpleDateFormat("yyyy/MM/dd/hh/mm/a");
+				else
+					ft = new SimpleDateFormat("yyyy/MM/dd");
 				try {
 					ft.parse(temp);
 					beginTime = ft.getCalendar();
@@ -359,9 +386,34 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 					e.printStackTrace();
 				}
 			}
+			else
+			{
+				pattern="((#12)~A,(\\/),(#31)~B,(\\/),(#10:20)~C)|20$C/$A/$B";
+				regex = new Regex(pattern);
+				i = regex.presentInSequence(line);
+				if (i>=0)
+				{
+					
+					String temp = regex.getReplacement();
+					temp = temp+time;
+					SimpleDateFormat ft ;
+					if (time.length()>1)
+						ft = new SimpleDateFormat("yyyy/MM/dd/hh/mm/a");
+					else
+						ft = new SimpleDateFormat("yyyy/MM/dd");
+					try {
+						ft.parse(temp);
+						beginTime = ft.getCalendar();
+					} catch (ParseException e) {
+					// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				}
+			}
 		
 		}
 		myAddr = addr1+addr2;
+		Log.i(TAG,myAddr);
 	}
 	
 	// add progressing bar, add asynctask to solve multi-thread problem
@@ -398,7 +450,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	 		   gryMat1.release();
 	 		   bitmap = Bitmap.createBitmap(dstWidth,dstHeight,Config.ARGB_8888);
 	 		   Utils.matToBitmap(gryMat2, bitmap);
-	 		 
+	 		   gryMat2.release();
 	 		  //Bitmap mutableBitmap = Bitmap.createScaledBitmap(bitmap, dstWidth, dstHeight, false).copy(Bitmap.Config.ARGB_8888, true);
 	 		  //Canvas canvas = new Canvas(mutableBitmap);
 	 		  //surfaceView = (SurfaceView)findViewById(R.id.camerapreview);
@@ -406,9 +458,16 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	 		  try {
 	 			//showprocessbar(surfaceView);
 	 			text = tess(bitmap);
+	 			bitmap.recycle();
 	 			Log.i(TAG,text);
 	 			//match infor
-	 			fuzzyMatch(text);
+	 			if (!text.isEmpty())
+	 				fuzzyMatch(text);
+	 			else
+	 			{
+	 				throw new IOException();
+	 			}
+	 			
 	 			//System.out.println(text);
 	 			///test test test
 	 		  } catch (IOException e) {
@@ -426,9 +485,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 
 	        @Override
 	        protected void onPostExecute(Void result) {
-	        	// after processing, display result or do the calendar event
 	        	addCalendarEvent(beginTime, myAddr);
-
 	        	super.onPostExecute(result);
 	        	progress.dismiss();
 	            //StartProgressBtn.setClickable(true);
@@ -584,9 +641,20 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 //		 testDate.set(Calendar.MINUTE, cal.MINUTE);       
 	     Intent intent = new Intent(Intent.ACTION_INSERT);
 	     intent.setData(Events.CONTENT_URI);
+	     try
+	     {
 	     intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, cal.getTime().getTime());
 	     intent.putExtra("eventLocation", address);
 	     startActivity(intent); 	        
- 
+	     }
+	     catch (NullPointerException e)
+	     {
+	    	 e.printStackTrace();
+	    	 Log.i(TAG,"no valid date found!\n");
+	    	 
+	    	 camera.startPreview();
+		      previewing = true;
+	    	 return;
+	     }
 	}
 }

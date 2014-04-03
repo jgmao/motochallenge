@@ -1,34 +1,22 @@
 package com.tofu.moto;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.Locale;
-
 import com.googlecode.tesseract.android.TessBaseAPI;
 
-import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
-import android.os.SystemClock;
 import android.provider.CalendarContract;
 import android.provider.CalendarContract.Events;
-import android.provider.MediaStore;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
-import android.app.Dialog;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
@@ -37,13 +25,11 @@ import android.content.res.AssetManager;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
-import android.graphics.Canvas;
 import android.graphics.PixelFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
-import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -54,8 +40,6 @@ import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.graphics.Bitmap;
-
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
@@ -234,21 +218,17 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 		//beginTime = Calendar.getInstance();
 		String line =text;
 		Regex regex;
-//		String pattern = "[^\n" +
-//				"@loc\n"+
-//				"]\n"+ //regex
-//				"::loc\n"+//def sub str
-//				"(^add,addr*,address,location)\n";
+
 		//match location/address
 		String addr1="";
 		String addr2="";
-		String tm="";
+		//String tm="";
 		String pattern = "{(^location,addr*)~A}|$A";
 		Log.i(TAG,pattern);
 		String punctuators = ",";
 		double threshold = -1;
 		regex = new Regex(pattern, threshold, punctuators);
-		boolean b = regex.match(line);
+		//boolean b = regex.match(line);
 		int i = regex.presentInSequence(line);
 		if (i>=0)
 		{
@@ -306,12 +286,7 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 				j=40;
 			line = suffix.substring(0,j);
 		}
-		//intent.putExtra("eventLocation", myAddress)
-		//match format hh/mm? Friday, month, day, year, hh/mm?
-//		pattern = "((?^Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Mon, Tue, Wed, Thu, Fri, Sat, Sun)~A,"+
-//				  "(?^January, February, March, April, May, June, July, August, September, October, November, December, Jan, Feb, Mar, Apr, May, Jun,  Jul,  Aug, Sep, Oct, Nov, Dec)~B,"+
-//				  "(#31)~C, (#2000:2500)~D, (?^on, at, in), ((#),(?:),(?#), (?!\\[a-zA-Z\\]+))~E)|$A_$B_$C_$D_$E";
-//		
+			
 		pattern="((?^Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday, Mon, Tue, Wed, Thu, Fri, Sat, Sun)~W,"+
 				"(^January, February, March, April, May, June, July, August, September, October, November, December, Jan, Feb, Mar, Apr, May, Jun,  Jul,  Aug, Sep, Oct, Nov, Dec)~B,"+
 				"(#31)~D, (#2000:2500)~Y, (?^on, at, in), (?(#)~N,(?:),(?#0:59)~K, (?^pm,am)~L)"+
@@ -497,45 +472,6 @@ public class MainActivity extends Activity implements SurfaceHolder.Callback{
 	 
 		}
 		
-	
-		  
-//	//@Override
-//    public void onClick(View view) {
-//    	Intent cameraIntent = new Intent(android.provider.MediaStore.ACTION_IMAGE_CAPTURE); 
-//    	if (cameraIntent.resolveActivity(getPackageManager()) != null) {
-//	        // Create the File where the photo should go
-//	        //File photoFile = null;
-//	        //try {
-//	        //    photoFile = createImageFile();
-//	        //} catch (IOException ex) {
-//	            // Error occurred while creating the File
-//	        //}
-//	        // Continue only if the File was successfully created
-//	        //if (photoFile != null) {
-//	        //    cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT,
-//	        //            Uri.fromFile(photoFile));
-//	            startActivityForResult(cameraIntent, REQUEST_IMAGE_CAPTURE);
-//	        //}
-//	    }
-//        //startActivityForResult(cameraIntent, REQUEST_IMAGE_CAPTURE); 
-//    }
-     
-//	protected void onActivityResult(int requestCode, int resultCode, Intent data) {  
-//	        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == RESULT_OK) {  
-//	            Bitmap photo = (Bitmap) data.getExtras().get("data"); 
-//	            imageView.setImageBitmap(photo);
-//	            String text;
-//	            try {
-//					text = tess(photo);
-//				} catch (IOException e) {
-//					
-//					text = "exception";
-//					e.printStackTrace();
-//				}
-//	            System.out.println(text);
-//	        }  
-//	} 
-	
 	
 	protected String tess(Bitmap bitmap) throws IOException
 	{
